@@ -1,0 +1,4 @@
+location: /Users/pro/Documents/devops/simple-nodejs
+version: 1.0.0
+destination: /home/ubuntu
+docker_password: xxx

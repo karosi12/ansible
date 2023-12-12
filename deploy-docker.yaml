@@ -1,0 +1,93 @@
+---
+- name: Wait for ssh connection
+  hosts: all
+  gather_facts: False
+  tasks:
+    - name: Ensure ssh port open
+      ansible.builtin.wait_for:
+        port: 22
+        delay: 10
+        timeout: 100
+        search_regex: OpenSSH
+        host: '{{ (ansible_ssh_host|default(ansible_host))|default(inventory_hostname) }}'
+      vars:
+        ansible_connection: local
+        ansible_python_interpreter: /usr/bin/python3
+
+- name: Install Docker
+  hosts: all
+  # hosts: webserver
+  become: yes
+  gather_facts: true
+  tasks:
+    - name: Install python3 and docker
+      vars:
+        ansible_python_interpreter: /usr/bin/python3
+        docker_host: unix://var/run/docker.sock  # Specify Docker host
+      ansible.builtin.apt:
+        name: 
+          - python3
+          - docker.io
+        state: present
+        update_cache: yes
+
+    - name: Install Docker-compose
+      ansible.builtin.get_url:
+        url: https://github.com/docker/compose/releases/download/1.27.4/docker-compose-Linux-{{lookup('pipe', 'uname -m')}}
+        dest: /usr/local/bin/docker-compose
+        mode: +x
+
+    - name: Start docker daemon
+      ansible.builtin.systemd:
+        name: docker
+        state: started
+    # - name: Install docker python module
+    #   ansible.builtin.pip:
+    #     name:
+    #       - docker
+    #       - docker-compose
+
+- name: Add ubuntu user to docker group
+  hosts: all
+  become: yes
+  tasks:
+    - name: Add ubuntu user to docker group
+      ansible.builtin.user:
+        name: ubuntu
+        groups: docker
+        append: yes
+    - name: Reconnect to server session
+      ansible.builtin.meta: reset_connection
+
+- name: Start docker containers
+  hosts: all
+  vars_files:
+    - project-vars
+  # vars_prompt:
+  #   - name: docker_password
+  #     prompt: Enter password for docker registry
+  tasks:
+    - name: Create redis db
+      ansible.builtin.docker_container:
+        name: redis
+        image: redis
+        command: redis-server --appendonly yes
+        state: started
+        recreate: yes
+        exposed_ports:
+          - 6379
+        # volumes_from:
+        #   - redisdata
+        
+    # - name: Copy docker compose
+    #   ansible.builtin.copy:
+    #     src: /Users/pro/Documents/devops/bootcamp-java-mysql/docker-compose.yaml
+    #     dest: /home/ubuntu/docker-compose.yaml
+    # - name: Docker login
+    #   ansible.builtin.docker_login:
+    #     registry_url: https://index.docker.io/v1/
+    #     username: karosi12
+    #     password: "{{docker_password}}"
+    # - name: Start container from compose
+    #   community.docker.docker_compose: 
+    #     project_src: /home/ubuntu 

@@ -1,0 +1,54 @@
+---
+- name: Install node and npm
+  hosts: webserver
+  become: yes
+
+  tasks:
+    - name: Update apt repo and cache
+      apt: update_cache=yes force_apt_get=yes cache_valid_time=3600
+
+    - name: Install nodejs and npm
+      apt:
+        pkg:
+          - nodejs
+          - npm
+        
+- name: Create a new user
+  become: yes
+  hosts: webserver
+  tasks:
+    - name: Create a new user
+      user:
+        name: kayode
+        comment: Kayode Admin
+        group: admin
+        state: present
+
+- name: Deploy nodejs app
+  hosts: webserver
+  vars_files:
+    - project-vars
+  tasks:
+    - name: Unpack the nodejs file
+      unarchive:
+        src: "{{ location }}/nodejs-app-{{ version }}.tgz"
+        dest: "{{ destination }}"
+      register: user_creation_result
+    - debug: msg={{ user_creation_result }}
+      # become_user: kayode
+      # become: yes
+
+    - name: Install dependencies
+      community.general.npm:
+        path: "{{ destination }}/package"
+
+    - name: Start the application
+      command: 
+        chdir: "{{ destination }}/package/app"
+        cmd: node server 
+      async: 1000
+      poll: 0
+    - name: Ensure app is running
+      shell: ps aux | grep node
+      register: app_status
+    - debug: msg={{app_status.stdout_lines}}

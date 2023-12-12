@@ -1,0 +1,13 @@
+---
+- name: Configure httpd webserver
+  hosts: webserver
+  # become: yes
+  tasks:
+  - name: install httpd server
+    yum: 
+      name: httpd
+      state: latest
+  - name: start httpd server
+    service:
+      name: httpd
+      state: started
