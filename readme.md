@@ -1,8 +1,8 @@
 # Ansible project
 ### Configure EC2
-- integrate with terraform
+- Integrate with terraform
 - Run a docker-compose file
 
 ### Configure EKS
 - Integrate with terraform
-- config a webserver
+- Config a webserver
