@@ -16,13 +16,8 @@
 - name: Create a new user
   become: yes
   hosts: webserver
-  tasks:
-    - name: Create a new user
-      user:
-        name: kayode
-        comment: Kayode Admin
-        group: admin
-        state: present
+  roles:
+    - create_user
 
 - name: Deploy nodejs app
   hosts: webserver
